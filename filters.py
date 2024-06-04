@@ -76,7 +76,7 @@ class FilterDefaultField(FilterBaseField):
 
 # def load_filter_classes() -> list["BaseFilter"]:
 def load_filter_classes():
-    return [OrderingFilter, DefaultFilter]
+    return [OrderingFilter, SearchFilter]
 
 
 class BaseFilter:
@@ -132,14 +132,10 @@ class OrderingFilter(BaseFilter):
             return ordering_param in valid_field_name_list
 
         valid_field_name_list = self.get_valid_field_name_list()
-        return [
-            ordering_param
-            for ordering_param in ordering_param_list
-            if term_valid(ordering_param)
-        ]
+        return [ordering_param for ordering_param in ordering_param_list if term_valid(ordering_param)]
 
 
-class DefaultFilter(BaseFilter):
+class SearchFilter(BaseFilter):
     MAP = {
         "==": pyoperator.eq,
         "!=": pyoperator.ne,
@@ -168,9 +164,7 @@ class DefaultFilter(BaseFilter):
             operator_pattern += f"{key}|"
         operator_pattern = operator_pattern[:-1]
 
-        regexp = re.search(
-            rf"(?P<key>.*)\((?P<operator>{operator_pattern}\))", param_key
-        )
+        regexp = re.search(rf"(?P<key>.*)\((?P<operator>{operator_pattern}\))", param_key)
         if regexp:
             return regexp.groupdict()
         return None
@@ -196,13 +190,9 @@ class DefaultFilter(BaseFilter):
             if not filter_field.is_support_operator(operator):
                 continue
             if operator in self.SUPPORT_METHOD:
-                self.query = self.query.where(
-                    getattr(filter_field.field_py, operator)(value == "true")
-                )
+                self.query = self.query.where(getattr(filter_field.field_py, operator)(value == "true"))
             else:
                 self.query = self.query.where(
-                    self.MAP[operator](
-                        filter_field.field_py, filter_field.parse_value(value)
-                    )
+                    self.MAP[operator](filter_field.field_py, filter_field.parse_value(value))
                 )
         return self
